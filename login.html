@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RideQ Login</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="center">
+
+<div class="card login-card">
+    <h2>🚗 RideQ</h2>
+
+    <input id="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button id="loginBtn" class="primary">Login</button>
+</div>
+
+<script type="module">
+import { login } from './js/api.js';
+
+document.getElementById("loginBtn").onclick = async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const res = await login(email, password);
+
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("role", res.role);
+
+    if (res.role === "DRIVER") {
+        window.location.href = "driver.html";
+    } else {
+        window.location.href = "user.html";
+    }
+};
+</script>
+
+</body>
+</html>

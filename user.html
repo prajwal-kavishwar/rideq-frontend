@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User - RideQ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+    <div class="container">
+    <h2>Book Ride</h2>
+
+    <div id="status" class="status">Select pickup</div>
+
+
+    <div id="map"></div>
+
+
+    <div id="tripDetails" class="card" style="display:none;">
+        <h3>Trip Details</h3>
+
+        <p><b>Status:</b> <span id="tripStatus"></span></p>
+        <p><b>User ID:</b> <span id="userId"></span></p>
+        <p><b>Driver ID:</b> <span id="driverId"></span></p>
+
+        <p><b>Pickup:</b> <span id="pickup"></span></p>
+        <p><b>Drop:</b> <span id="drop"></span></p>
+
+        <p><b>Distance:</b> <span id="distance"></span> km</p>
+        <p><b>Fare:</b> ₹<span id="fare"></span></p>
+    </div>
+
+    <!-- ACTION BUTTON -->
+    <button id="createTripBtn" class="primary">Create Trip</button>
+    <button onclick="logout()">Logout</button>
+</div>
+
+
+<div id="tripDetails" class="card" style="display:none;">
+    <h3>Trip Details</h3>
+
+    <p><b>Status:</b> <span id="tripStatus"></span></p>
+    <p><b>User ID:</b> <span id="userId"></span></p>
+    <p><b>Driver ID:</b> <span id="driverId"></span></p>
+
+    <p><b>Pickup:</b> <span id="pickup"></span></p>
+    <p><b>Drop:</b> <span id="drop"></span></p>
+
+    <p><b>Distance:</b> <span id="distance"></span> km</p>
+    <p><b>Fare:</b> ₹<span id="fare"></span></p>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script type="module">
+import { initMap, getLocations } from './js/map.js';
+import { createTrip, getTrip } from './js/api.js';
+
+// 🔐 Protect page
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+
+if (!token || role !== "USER") {
+    window.location.href = "login.html";
+}
+
+initMap();
+
+document.getElementById("createTripBtn").onclick = async () => {
+    const { pickup, drop } = getLocations();
+
+    if (!pickup || !drop) {
+        alert("Select pickup & drop");
+        return;
+    }
+
+    const trip = await createTrip(pickup, drop);
+    startPolling(trip.id);
+};
+
+function startPolling(tripId) {
+    const statusDiv = document.getElementById("status");
+
+    const interval = setInterval(async () => {
+        const trip = await getTrip(tripId);
+
+        console.log("Polling:", trip);
+
+        statusDiv.innerText = trip.status;
+
+     
+        updateTripDetails(trip);
+
+        if (trip.status === "COMPLETED" || trip.status === "CANCELED") {
+            clearInterval(interval);
+        }
+
+    }, 3000);
+}
+function updateTripDetails(trip) {
+
+    document.getElementById("tripDetails").style.display = "block";
+
+    document.getElementById("tripStatus").innerText = trip.status;
+    document.getElementById("userId").innerText = trip.userId;
+    document.getElementById("driverId").innerText = trip.driverId || "Not Assigned";
+
+    document.getElementById("pickup").innerText =
+        `${trip.pickUpLocation.latitude}, ${trip.pickUpLocation.longitude}`;
+
+    document.getElementById("drop").innerText =
+        `${trip.dropLocation.latitude}, ${trip.dropLocation.longitude}`;
+
+    document.getElementById("distance").innerText =
+        trip.distance ? trip.distance.toFixed(2) : "0";
+
+    document.getElementById("fare").innerText =
+        trip.fare ? trip.fare.toFixed(2) : "0";
+}
+
+window.logout = function() {
+    localStorage.clear();
+    window.location.href = "login.html";
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Driver - RideQ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Driver Panel</h2>
+
+    <div id="driverStatus" class="status">Offline</div>
+
+    <div id="map"></div>
+
+    <button id="setLocationBtn" class="primary">Set Location</button>
+    <button id="goOnlineBtn">Go Online</button>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script type="module">
+import { initMap, getLocations } from './js/map.js';
+import { setDriverLocation } from './js/api.js';
+
+// 🔐 Protect page
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+
+if (!token || role !== "DRIVER") {
+    window.location.href = "login.html";
+}
+
+initMap();
+
+let locationSet = false;
+
+document.getElementById("setLocationBtn").onclick = async () => {
+    const { pickup } = getLocations();
+
+    if (!pickup) {
+        alert("Click map first");
+        return;
+    }
+
+    await setDriverLocation(pickup.lat, pickup.lng);
+    locationSet = true;
+
+    alert("Location set ✅");
+};
+
+document.getElementById("goOnlineBtn").onclick = async () => {
+    if (!locationSet) {
+        alert("Set location first");
+        return;
+    }
+
+    await fetch("http://localhost:9090/api/drivers/online", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    document.getElementById("driverStatus").innerText = "Online 🚗";
+};
+
+window.logout = function() {
+    localStorage.clear();
+    window.location.href = "login.html";
+};
+</script>
+
+</body>
+</html>
